@@ -142,3 +142,14 @@ example of logs
 SYMPLiFIED
 
 ![](../../doc/images/8.PNG)
+
+
+gcloud projects describe devops-cert-labs --format="value(projectNumber)"
+
+gcloud projects add-iam-policy-binding devops-cert-labs `
+  --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" `
+  --role="roles/cloudtrace.agent"
+
+https://console.cloud.google.com/traces/list?project=devops-cert-labs
+
+![](../../doc/images/9.PNG)

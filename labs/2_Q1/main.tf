@@ -777,6 +777,9 @@ receivers:
         endpoint: 0.0.0.0:4317
 
 exporters:
+  googlecloud:
+    project: devops-cert-labs
+
   debug:
     verbosity: detailed
 
@@ -784,7 +787,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [debug]
+      exporters: [googlecloud, debug]
 EOF
   }
 }
@@ -822,7 +825,7 @@ resource "kubernetes_deployment" "otel_collector" {
 
         container {
           name  = "otel"
-          image = "otel/opentelemetry-collector:latest"
+          image = "otel/opentelemetry-collector-contrib:latest"
 
           args = ["--config=/etc/otel.yaml"]
 
