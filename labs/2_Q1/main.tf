@@ -270,7 +270,6 @@ resource "kubernetes_service" "redis" {
 }
 
 #node deployment
-
 resource "kubernetes_config_map" "node_app_code" {
 
   metadata {
@@ -288,119 +287,241 @@ const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 
 const sdk = new NodeSDK({
+
   traceExporter: new OTLPTraceExporter({
     url: 'http://otel-collector:4318/v1/traces',
   }),
-  instrumentations: [getNodeAutoInstrumentations()],
+
+  instrumentations: [
+    getNodeAutoInstrumentations()
+  ],
+
   resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'node-app',
+
+    [SemanticResourceAttributes.SERVICE_NAME]:
+      'node-app'
+
   }),
+
 });
 
+
 sdk.start();
+
 
 const express = require('express');
 const redis = require('redis');
 
+
 const app = express();
 
+
 const client = redis.createClient({
-  url: 'redis://redis:6379'
+  url:'redis://redis:6379'
 });
+
 
 client.connect();
 
-app.get('/', async (req, res) => {
+
+app.get('/', async(req,res)=>{
+
   let hits = await client.incr('hits');
-  res.send('Node response hits=' + hits);
+
+  res.send(
+    'Node response hits=' + hits
+  );
+
 });
 
+
 app.listen(3000);
+
 EOF
+
 
     "package.json" = <<EOF
 {
-  "name": "node-app",
-  "version": "1.0.0",
-  "dependencies": {
-    "express": "^4.18.0",
-    "redis": "^4.6.0",
-    "@opentelemetry/sdk-node": "^0.52.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.52.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.52.0",
-    "@opentelemetry/resources": "^1.25.0",
-    "@opentelemetry/semantic-conventions": "^1.25.0"
+  "name":"node-app",
+  "version":"1.0.0",
+  "dependencies":{
+
+    "express":"^4.18.0",
+    "redis":"^4.6.0",
+
+    "@opentelemetry/sdk-node":"^0.52.0",
+    "@opentelemetry/auto-instrumentations-node":"^0.52.0",
+    "@opentelemetry/exporter-trace-otlp-http":"^0.52.0",
+    "@opentelemetry/resources":"^1.25.0",
+    "@opentelemetry/semantic-conventions":"^1.25.0"
+
   }
 }
 EOF
 
   }
+
 }
+
 
 resource "kubernetes_deployment" "node" {
 
   metadata {
-    name      = "node-app"
+
+    name = "node-app"
+
     namespace = kubernetes_namespace.production.metadata[0].name
+
   }
 
+
   spec {
+
     replicas = 1
 
+
     selector {
+
       match_labels = {
+
         app = "node"
+
       }
+
     }
+
 
     template {
 
+
       metadata {
+
         labels = {
+
           app = "node"
+
         }
+
       }
+
+
 
       spec {
 
+
         container {
-          name  = "node"
+
+
+          name = "node"
+
+
           image = "node:20-alpine"
+
+
 
           working_dir = "/app"
 
-          command = ["sh", "-c"]
 
-          args = [
-            <<EOF
-apk add --no-cache curl &&
-cp /app-src/package.json /app &&
-cp /app-src/index.js /app &&
-npm install &&
-node index.js
-EOF
+
+          command = [
+
+            "sh",
+
+            "-c"
+
           ]
 
+
+
+          args = [
+
+            "cp /app-src/index.js /app/index.js && cp /app-src/package.json /app/package.json && npm install && node /app/index.js"
+
+          ]
+
+
+
           port {
+
             container_port = 3000
+
           }
+
+
 
           volume_mount {
-            name       = "app-code"
+
+
+            name = "app-code"
+
+
             mount_path = "/app-src"
+
+
           }
+
+
+
+          volume_mount {
+
+
+            name = "app-runtime"
+
+
+            mount_path = "/app"
+
+
+          }
+
+
+
         }
+
+
 
         volume {
+
+
           name = "app-code"
 
+
+
           config_map {
+
+
             name = kubernetes_config_map.node_app_code.metadata[0].name
+
+
           }
+
+
         }
+
+
+
+        volume {
+
+
+          name = "app-runtime"
+
+
+
+          empty_dir {}
+
+
+
+        }
+
+
       }
+
+
     }
+
+
   }
+
+
 }
 
 #

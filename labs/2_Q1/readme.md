@@ -1,6 +1,4 @@
-gcloud components install gke-gcloud-auth-plugin
-
-
+![](../../doc/images/7.PNG)
 
 When running a Node.js application on GKE that communicates with other services over HTTP, the main challenge is not only collecting logs. The real goal is understanding which dependency is affecting performance and identifying where latency is introduced throughout the request flow.
 
@@ -119,3 +117,28 @@ OpenTelemetry = instrumentation framework used to generate traces and telemetry 
 GKE observability with OpenTelemetry = end-to-end visibility of request flows between services
 
 For distributed applications, tracing provides the context required to understand performance issues, while logging alone only provides isolated information from individual components.
+
+NOTE 1:
+Node is running `npm install` every time the pod restarts. That’s fine for a lab environment, but for a real GKE setup, you should create a Dockerfile and bake the dependencies into the image. That’s the professional way to deploy Node on Kubernetes.
+
+| Command                                               | Purpose                               |
+| ----------------------------------------------------- | ------------------------------------- |
+| `gcloud components install gke-gcloud-auth-plugin`    | Installs GKE authentication plugin.   |
+| `gcloud container clusters get-credentials ...`       | Connects kubectl to the GKE cluster.  |
+| `kubectl get namespaces`                              | Lists Kubernetes namespaces.          |
+| `kubectl get all -n production`                       | Shows all resources in the namespace. |
+| `kubectl describe pod -n production <pod>`            | Shows pod details and events.         |
+| `kubectl logs -n production deploy/node-app`          | Shows Node.js application logs.       |
+| `kubectl logs -n production deploy/otel-collector -f` | Streams OpenTelemetry Collector logs. |
+| `kubectl exec ...`                                    | Executes commands inside a container. |
+| `kubectl get endpoints -n production node`            | Checks Service → Pod connections.     |
+| `kubectl delete namespace production`                 | Deletes the whole test environment.   |
+
+example of logs
+
+[log](./otel.log)
+
+
+SYMPLiFIED
+
+![](../../doc/images/8.PNG)
