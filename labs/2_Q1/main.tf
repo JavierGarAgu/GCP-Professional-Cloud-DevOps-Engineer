@@ -269,129 +269,139 @@ resource "kubernetes_service" "redis" {
 
 }
 
+#node deployment
 
-resource "kubernetes_deployment" "node" {
+resource "kubernetes_config_map" "node_app_code" {
 
   metadata {
-
-    name = "node-app"
-
+    name      = "node-app-code"
     namespace = kubernetes_namespace.production.metadata[0].name
-
   }
 
+  data = {
 
-  spec {
+    "index.js" = <<EOF
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { Resource } = require('@opentelemetry/resources');
+const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 
-    replicas = 1
+const sdk = new NodeSDK({
+  traceExporter: new OTLPTraceExporter({
+    url: 'http://otel-collector:4318/v1/traces',
+  }),
+  instrumentations: [getNodeAutoInstrumentations()],
+  resource: new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: 'node-app',
+  }),
+});
 
+sdk.start();
 
-    selector {
+const express = require('express');
+const redis = require('redis');
 
-      match_labels = {
+const app = express();
 
-        app = "node"
-
-      }
-
-    }
-
-
-    template {
-
-      metadata {
-
-        labels = {
-
-          app = "node"
-
-        }
-
-      }
-
-
-
-      spec {
-
-
-        container {
-
-
-          name = "node"
-
-
-          image = "node:20-alpine"
-
-
-
-          working_dir = "/app"
-
-
-
-          command = [
-
-            "sh",
-
-            "-c"
-
-          ]
-
-
-
-          args = [
-
-            <<EOF
-npm init -y &&
-npm install express redis &&
-node -e "
-const express=require('express');
-const redis=require('redis');
-
-const app=express();
-
-const client=redis.createClient({
- url:'redis://redis:6379'
+const client = redis.createClient({
+  url: 'redis://redis:6379'
 });
 
 client.connect();
 
-app.get('/',async(req,res)=>{
-
- let hits=await client.incr('hits');
-
- res.send('Node response hits='+hits);
-
+app.get('/', async (req, res) => {
+  let hits = await client.incr('hits');
+  res.send('Node response hits=' + hits);
 });
 
-
 app.listen(3000);
-"
+EOF
+
+    "package.json" = <<EOF
+{
+  "name": "node-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.18.0",
+    "redis": "^4.6.0",
+    "@opentelemetry/sdk-node": "^0.52.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.52.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.52.0",
+    "@opentelemetry/resources": "^1.25.0",
+    "@opentelemetry/semantic-conventions": "^1.25.0"
+  }
+}
+EOF
+
+  }
+}
+
+resource "kubernetes_deployment" "node" {
+
+  metadata {
+    name      = "node-app"
+    namespace = kubernetes_namespace.production.metadata[0].name
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "node"
+      }
+    }
+
+    template {
+
+      metadata {
+        labels = {
+          app = "node"
+        }
+      }
+
+      spec {
+
+        container {
+          name  = "node"
+          image = "node:20-alpine"
+
+          working_dir = "/app"
+
+          command = ["sh", "-c"]
+
+          args = [
+            <<EOF
+apk add --no-cache curl &&
+cp /app-src/package.json /app &&
+cp /app-src/index.js /app &&
+npm install &&
+node index.js
 EOF
           ]
 
-
-
           port {
-
             container_port = 3000
-
           }
 
-
+          volume_mount {
+            name       = "app-code"
+            mount_path = "/app-src"
+          }
         }
 
+        volume {
+          name = "app-code"
 
+          config_map {
+            name = kubernetes_config_map.node_app_code.metadata[0].name
+          }
+        }
       }
-
-
     }
-
-
   }
-
-
 }
-
 
 #
 # NODE SERVICE
@@ -623,4 +633,133 @@ resource "kubernetes_service" "nginx" {
 
   }
 
+}
+
+#
+# OPENTELEMETRY CONFIG
+#
+resource "kubernetes_config_map" "otel_config" {
+
+  metadata {
+    name      = "otel-config"
+    namespace = kubernetes_namespace.production.metadata[0].name
+  }
+
+  data = {
+    "otel.yaml" = <<EOF
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]
+EOF
+  }
+}
+
+
+
+#
+# OPENTELEMETRY COLLECTOR
+#
+resource "kubernetes_deployment" "otel_collector" {
+
+  metadata {
+    name      = "otel-collector"
+    namespace = kubernetes_namespace.production.metadata[0].name
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "otel"
+      }
+    }
+
+    template {
+
+      metadata {
+        labels = {
+          app = "otel"
+        }
+      }
+
+      spec {
+
+        container {
+          name  = "otel"
+          image = "otel/opentelemetry-collector:latest"
+
+          args = ["--config=/etc/otel.yaml"]
+
+          port {
+            container_port = 4318
+          }
+
+          port {
+            container_port = 4317
+          }
+
+          volume_mount {
+            name       = "otel-config"
+            mount_path = "/etc/otel.yaml"
+            sub_path   = "otel.yaml"
+          }
+        }
+
+        volume {
+          name = "otel-config"
+
+          config_map {
+            name = kubernetes_config_map.otel_config.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+#
+# OTEL SERVICE (para que Node lo vea dentro del cluster)
+#
+resource "kubernetes_service" "otel" {
+
+  metadata {
+    name      = "otel-collector"
+    namespace = kubernetes_namespace.production.metadata[0].name
+  }
+
+  spec {
+
+    selector = {
+      app = "otel"
+    }
+
+    port {
+      name        = "otlp-http"
+      port        = 4318
+      target_port = 4318
+    }
+
+    port {
+      name        = "otlp-grpc"
+      port        = 4317
+      target_port = 4317
+    }
+  }
 }
