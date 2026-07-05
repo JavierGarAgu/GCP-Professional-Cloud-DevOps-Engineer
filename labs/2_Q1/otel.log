@@ -1,0 +1,404 @@
+
+PS C:\Users\javier> kubectl logs -n production deploy/otel-collector -f
+2026-06-28T13:48:27.749Z        info    otelconftelemetry/tracer.go:47  Internal trace telemetry disabled       {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}}
+2026-06-28T13:48:27.752Z        info    service@v0.155.0/service.go:256 Starting otelcol...     {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "Version": "0.155.0", "NumCPU": 2}
+2026-06-28T13:48:27.752Z        info    extensions/extensions.go:41     Starting extensions...  {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}}
+2026-06-28T13:48:27.753Z        info    otlpreceiver@v0.155.0/otlp.go:120       Starting GRPC server    {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "otelcol.component.id": "otlp", "otelcol.component.kind": "receiver", "endpoint": "[::]:4317"}
+2026-06-28T13:48:27.753Z        info    otlpreceiver@v0.155.0/otlp.go:175       Starting HTTP server    {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "otelcol.component.id": "otlp", "otelcol.component.kind": "receiver", "endpoint": "[::]:4318"}
+2026-06-28T13:48:27.753Z        info    service@v0.155.0/service.go:279 Everything is ready. Begin running and processing data. {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}}
+2026-06-28T13:49:20.938Z        info    Traces  {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
+2026-06-28T13:49:21.326Z        info    ResourceSpans #0
+Resource SchemaURL:
+Resource attributes:
+     -> service.name: Str(node-app)
+     -> telemetry.sdk.language: Str(nodejs)
+     -> telemetry.sdk.name: Str(opentelemetry)
+     -> telemetry.sdk.version: Str(1.25.1)
+     -> process.pid: Int(1)
+     -> process.executable.name: Str(node)
+     -> process.executable.path: Str(/usr/local/bin/node)
+     -> process.command_args: Slice(["/usr/local/bin/node","/app/index.js"])
+     -> process.runtime.version: Str(20.20.2)
+     -> process.runtime.name: Str(nodejs)
+     -> process.runtime.description: Str(Node.js)
+     -> process.command: Str(/app/index.js)
+     -> process.owner: Str(root)
+     -> host.name: Str(node-app-5c78499f95-sp7tc)
+     -> host.arch: Str(amd64)
+ScopeSpans #0
+ScopeSpans SchemaURL:
+InstrumentationScope @opentelemetry/instrumentation-net 0.40.0
+Span #0
+    Trace ID       : 9d87c815f0cb60ebffff6b257fdb00e1
+    Parent ID      : 8f84a9af18b9e434
+    ID             : a4598048d29baa12
+    Name           : tcp.connect
+    Kind           : Internal
+    Start time     : 2026-06-28 13:49:13.583 +0000 UTC
+    End time       : 2026-06-28 13:49:13.802195861 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> net.transport: Str(ip_tcp)
+     -> net.peer.name: Str(redis)
+     -> net.peer.port: Int(6379)
+     -> net.peer.ip: Str(34.118.228.51)
+     -> net.host.ip: Str(10.60.0.31)
+     -> net.host.port: Int(50894)
+ScopeSpans #1
+ScopeSpans SchemaURL:
+InstrumentationScope @opentelemetry/instrumentation-redis-4 0.43.0
+Span #0
+    Trace ID       : 9d87c815f0cb60ebffff6b257fdb00e1
+    Parent ID      :
+    ID             : 8f84a9af18b9e434
+    Name           : redis-connect
+    Kind           : Client
+    Start time     : 2026-06-28 13:49:13.579 +0000 UTC
+    End time       : 2026-06-28 13:49:14.070779988 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> db.system: Str(redis)
+     -> net.peer.name: Str(redis)
+     -> net.peer.port: Int(6379)
+     -> db.connection_string: Str(redis://redis:6379)
+        {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "traces"}
+2026-06-28T13:51:33.382Z        info    Traces  {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 15}
+2026-06-28T13:51:33.429Z        info    ResourceSpans #0
+Resource SchemaURL:
+Resource attributes:
+     -> service.name: Str(node-app)
+     -> telemetry.sdk.language: Str(nodejs)
+     -> telemetry.sdk.name: Str(opentelemetry)
+     -> telemetry.sdk.version: Str(1.25.1)
+     -> process.pid: Int(1)
+     -> process.executable.name: Str(node)
+     -> process.executable.path: Str(/usr/local/bin/node)
+     -> process.command_args: Slice(["/usr/local/bin/node","/app/index.js"])
+     -> process.runtime.version: Str(20.20.2)
+     -> process.runtime.name: Str(nodejs)
+     -> process.runtime.description: Str(Node.js)
+     -> process.command: Str(/app/index.js)
+     -> process.owner: Str(root)
+     -> host.name: Str(node-app-5c78499f95-sp7tc)
+     -> host.arch: Str(amd64)
+ScopeSpans #0
+ScopeSpans SchemaURL:
+InstrumentationScope @opentelemetry/instrumentation-express 0.44.0
+Span #0
+    Trace ID       : e6e9721300f125b9891a5ede739f77f4
+    Parent ID      : d5cf0b463af6ec7b
+    ID             : 35f4559e3f4ed6f2
+    Name           : middleware - query
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:28.376 +0000 UTC
+    End time       : 2026-06-28 13:51:28.37739311 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(query)
+     -> express.type: Str(middleware)
+Span #1
+    Trace ID       : e6e9721300f125b9891a5ede739f77f4
+    Parent ID      : d5cf0b463af6ec7b
+    ID             : 98ddc524963ba263
+    Name           : middleware - expressInit
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:28.418 +0000 UTC
+    End time       : 2026-06-28 13:51:28.418360905 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(expressInit)
+     -> express.type: Str(middleware)
+Span #2
+    Trace ID       : e6e9721300f125b9891a5ede739f77f4
+    Parent ID      : d5cf0b463af6ec7b
+    ID             : a42df1553f53c21a
+    Name           : request handler - /
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:28.436 +0000 UTC
+    End time       : 2026-06-28 13:51:28.436057367 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(/)
+     -> express.type: Str(request_handler)
+Span #3
+    Trace ID       : 940190736d8b6fadabee8ca429e5dfdf
+    Parent ID      : 82d0869f2f1667fc
+    ID             : f7b1e4eb5f9e0903
+    Name           : middleware - query
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:30.881 +0000 UTC
+    End time       : 2026-06-28 13:51:30.881299782 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(query)
+     -> express.type: Str(middleware)
+Span #4
+    Trace ID       : 940190736d8b6fadabee8ca429e5dfdf
+    Parent ID      : 82d0869f2f1667fc
+    ID             : 088aa941b5bda1c5
+    Name           : middleware - expressInit
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:30.881 +0000 UTC
+    End time       : 2026-06-28 13:51:30.881111003 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(expressInit)
+     -> express.type: Str(middleware)
+Span #5
+    Trace ID       : 940190736d8b6fadabee8ca429e5dfdf
+    Parent ID      : 82d0869f2f1667fc
+    ID             : b0b1141b6890a0db
+    Name           : request handler - /
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:30.882 +0000 UTC
+    End time       : 2026-06-28 13:51:30.882104227 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(/)
+     -> express.type: Str(request_handler)
+Span #6
+    Trace ID       : 429188052753e444127bbcef81559f68
+    Parent ID      : 07ecb25447eaa883
+    ID             : ea1daaf28dfd69cd
+    Name           : middleware - query
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:31.565 +0000 UTC
+    End time       : 2026-06-28 13:51:31.565071297 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(query)
+     -> express.type: Str(middleware)
+Span #7
+    Trace ID       : 429188052753e444127bbcef81559f68
+    Parent ID      : 07ecb25447eaa883
+    ID             : 89838fdc14ea4021
+    Name           : middleware - expressInit
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:31.565 +0000 UTC
+    End time       : 2026-06-28 13:51:31.565075486 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(expressInit)
+     -> express.type: Str(middleware)
+Span #8
+    Trace ID       : 429188052753e444127bbcef81559f68
+    Parent ID      : 07ecb25447eaa883
+    ID             : 356c41501dda1278
+    Name           : request handler - /
+    Kind           : Internal
+    Start time     : 2026-06-28 13:51:31.566 +0000 UTC
+    End time       : 2026-06-28 13:51:31.566011022 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.route: Str(/)
+     -> express.name: Str(/)
+     -> express.type: Str(request_handler)
+ScopeSpans #1
+ScopeSpans SchemaURL:
+InstrumentationScope @opentelemetry/instrumentation-redis-4 0.43.0
+Span #0
+    Trace ID       : e6e9721300f125b9891a5ede739f77f4
+    Parent ID      : d5cf0b463af6ec7b
+    ID             : 9eb0200b53b791e4
+    Name           : redis-INCR
+    Kind           : Client
+    Start time     : 2026-06-28 13:51:28.438 +0000 UTC
+    End time       : 2026-06-28 13:51:28.500428016 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> db.system: Str(redis)
+     -> net.peer.name: Str(redis)
+     -> net.peer.port: Int(6379)
+     -> db.connection_string: Str(redis://redis:6379)
+     -> db.statement: Str(INCR hits)
+Span #1
+    Trace ID       : 940190736d8b6fadabee8ca429e5dfdf
+    Parent ID      : 82d0869f2f1667fc
+    ID             : 2c102be801abd68a
+    Name           : redis-INCR
+    Kind           : Client
+    Start time     : 2026-06-28 13:51:30.882 +0000 UTC
+    End time       : 2026-06-28 13:51:30.883154579 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> db.system: Str(redis)
+     -> net.peer.name: Str(redis)
+     -> net.peer.port: Int(6379)
+     -> db.connection_string: Str(redis://redis:6379)
+     -> db.statement: Str(INCR hits)
+Span #2
+    Trace ID       : 429188052753e444127bbcef81559f68
+    Parent ID      : 07ecb25447eaa883
+    ID             : c4721bd9f0bf6852
+    Name           : redis-INCR
+    Kind           : Client
+    Start time     : 2026-06-28 13:51:31.566 +0000 UTC
+    End time       : 2026-06-28 13:51:31.566994866 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> db.system: Str(redis)
+     -> net.peer.name: Str(redis)
+     -> net.peer.port: Int(6379)
+     -> db.connection_string: Str(redis://redis:6379)
+     -> db.statement: Str(INCR hits)
+ScopeSpans #2
+ScopeSpans SchemaURL:
+InstrumentationScope @opentelemetry/instrumentation-http 0.54.2
+Span #0
+    Trace ID       : e6e9721300f125b9891a5ede739f77f4
+    Parent ID      :
+    ID             : d5cf0b463af6ec7b
+    Name           : GET /
+    Kind           : Server
+    Start time     : 2026-06-28 13:51:28.372 +0000 UTC
+    End time       : 2026-06-28 13:51:28.906222968 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.url: Str(http://\207.175.73.43/)
+     -> http.host: Str(\207.175.73.43)
+     -> net.host.name: Str(\207.175.73.43)
+     -> http.method: Str(GET)
+     -> http.scheme: Str(http)
+     -> http.client_ip: Str(\10.60.0.1)
+     -> http.target: Str(/)
+     -> http.user_agent: Str(Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+     -> http.flavor: Str(1.1)
+     -> net.transport: Str(ip_tcp)
+     -> net.host.ip: Str(::ffff:10.60.0.31)
+     -> net.host.port: Int(3000)
+     -> net.peer.ip: Str(::ffff:10.60.0.30)
+     -> net.peer.port: Int(41308)
+     -> http.status_code: Int(200)
+     -> http.status_text: Str(OK)
+     -> http.route: Str(/)
+Span #1
+    Trace ID       : 940190736d8b6fadabee8ca429e5dfdf
+    Parent ID      :
+    ID             : 82d0869f2f1667fc
+    Name           : GET /
+    Kind           : Server
+    Start time     : 2026-06-28 13:51:30.88 +0000 UTC
+    End time       : 2026-06-28 13:51:30.88486318 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.url: Str(http://\207.175.73.43/)
+     -> http.host: Str(\207.175.73.43)
+     -> net.host.name: Str(\207.175.73.43)
+     -> http.method: Str(GET)
+     -> http.scheme: Str(http)
+     -> http.client_ip: Str(\10.60.0.1)
+     -> http.target: Str(/)
+     -> http.user_agent: Str(Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+     -> http.flavor: Str(1.1)
+     -> net.transport: Str(ip_tcp)
+     -> net.host.ip: Str(::ffff:10.60.0.31)
+     -> net.host.port: Int(3000)
+     -> net.peer.ip: Str(::ffff:10.60.0.30)
+     -> net.peer.port: Int(41312)
+     -> http.status_code: Int(200)
+     -> http.status_text: Str(OK)
+     -> http.route: Str(/)
+Span #2
+    Trace ID       : 429188052753e444127bbcef81559f68
+    Parent ID      :
+    ID             : 07ecb25447eaa883
+    Name           : GET /
+    Kind           : Server
+    Start time     : 2026-06-28 13:51:31.565 +0000 UTC
+    End time       : 2026-06-28 13:51:31.568504144 +0000 UTC
+    Status code    : Unset
+    Status message :
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> http.url: Str(http://\207.175.73.43/)
+     -> http.host: Str(\207.175.73.43)
+     -> net.host.name: Str(\207.175.73.43)
+     -> http.method: Str(GET)
+     -> http.scheme: Str(http)
+     -> http.client_ip: Str(\10.60.0.1)
+     -> http.target: Str(/)
+     -> http.user_agent: Str(Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+     -> http.flavor: Str(1.1)
+     -> net.transport: Str(ip_tcp)
+     -> net.host.ip: Str(::ffff:10.60.0.31)
+     -> net.host.port: Int(3000)
+     -> net.peer.ip: Str(::ffff:10.60.0.30)
+     -> net.peer.port: Int(48364)
+     -> http.status_code: Int(200)
+     -> http.status_text: Str(OK)
+     -> http.route: Str(/)
+        {"resource": {"service.instance.id": "a955d2a8-b8e3-4766-a1fc-652aa2824687", "service.name": "otelcol", "service.version": "0.155.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "traces"}
