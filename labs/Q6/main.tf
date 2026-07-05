@@ -85,6 +85,24 @@ resource "google_project_service" "compute" {
 #
 #######################################################
 
+#######################################################
+#
+# GKE NODE SERVICE ACCOUNT
+#
+#######################################################
+
+resource "google_service_account" "gke_node_sa" {
+  account_id   = "gke-node-sa"
+  display_name = "GKE Node Service Account"
+}
+
+resource "google_project_iam_member" "gke_node_artifact_reader" {
+  project = "devops-cert-labs"
+  role    = "roles/artifactregistry.reader"
+
+  member = "serviceAccount:${google_service_account.gke_node_sa.email}"
+}
+
 resource "google_artifact_registry_repository" "docker_repo" {
 
   depends_on = [
@@ -139,6 +157,10 @@ resource "google_container_node_pool" "nodes" {
 
   location = google_container_cluster.cluster.location
 
+  depends_on = [
+    google_project_iam_member.gke_node_artifact_reader
+  ]
+  
   node_count = 1
 
   node_config {
@@ -150,6 +172,8 @@ resource "google_container_node_pool" "nodes" {
     disk_size_gb = 20
 
     preemptible = true
+
+    service_account = google_service_account.gke_node_sa.email
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
@@ -231,122 +255,6 @@ resource "google_project_iam_member" "cloudbuild_service_account_user" {
   role = "roles/iam.serviceAccountUser"
 
   member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
-
-}
-
-#######################################################
-#
-# WEBHOOK RECEIVER
-#
-#######################################################
-
-resource "kubernetes_deployment" "webhook" {
-
-  depends_on = [
-    google_container_node_pool.nodes
-  ]
-
-  metadata {
-
-    name = "webhook"
-
-    namespace = kubernetes_namespace.production.metadata[0].name
-
-    labels = {
-
-      app = "webhook"
-
-    }
-
-  }
-
-  spec {
-
-    replicas = 1
-
-    selector {
-
-      match_labels = {
-
-        app = "webhook"
-
-      }
-
-    }
-
-    template {
-
-      metadata {
-
-        labels = {
-
-          app = "webhook"
-
-        }
-
-      }
-
-      spec {
-
-        container {
-
-          name = "webhook"
-
-          image = "mendhak/http-https-echo:31"
-
-          port {
-
-            container_port = 8080
-
-          }
-
-          env {
-
-            name = "HTTP_PORT"
-
-            value = "8080"
-
-          }
-
-        }
-
-      }
-
-    }
-
-  }
-
-}
-
-#######################################################
-#
-# WEBHOOK SERVICE
-#
-#######################################################
-resource "kubernetes_service" "webhook" {
-
-  metadata {
-
-    name = "webhook"
-
-    namespace = kubernetes_namespace.production.metadata[0].name
-
-  }
-
-  spec {
-
-    selector = {
-      app = "webhook"
-    }
-
-    port {
-      port        = 8080
-      target_port = 8080
-    }
-
-    type = "LoadBalancer"
-
-  }
 
 }
 
@@ -469,10 +377,4 @@ output "artifact_registry_name" {
 
 output "artifact_registry_url" {
   value = "europe-west1-docker.pkg.dev/devops-cert-labs/${google_artifact_registry_repository.docker_repo.repository_id}"
-}
-
-output "webhook_ip" {
-
-  value = kubernetes_service.webhook.status[0].load_balancer[0].ingress[0].ip
-
 }
