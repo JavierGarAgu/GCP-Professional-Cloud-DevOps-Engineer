@@ -1,3 +1,6 @@
+COMMANDS
+
+```
 gcloud container clusters get-credentials logging-sidecar-lab --zone europe-west1-b --project devops-cert-labs
 
 kubectl get pods -n production
@@ -7,6 +10,7 @@ kubectl logs -n production third-party-app-795cb9f56b-5kf8c -c log-sidecar
 gcloud logging logs list
 
 gcloud logging read "resource.type=k8s_container AND resource.labels.namespace_name=production" --limit=1
+```
 
 There is debate because **both B and D are technically possible**, but the exam asks what you **should** do, meaning the solution that best follows Google Cloud and Kubernetes best practices.
 
