@@ -423,3 +423,102 @@ canary
 #
 # Compare the canary with a new deployment
 # of the current production version.
+
+
+
+
+SIMULATION
+
+
+
+
+
+#######################################################
+# 1. CONNECT TO GKE CLUSTER
+#######################################################
+
+# Get credentials for the cluster (Windows PowerShell)
+gcloud container clusters get-credentials spinnaker-canary-lab `
+  --zone=europe-west1-b `
+  --project=devops-cert-labs
+
+
+#######################################################
+# 2. CHECK CLUSTER STATE
+#######################################################
+
+# List namespaces
+kubectl get namespaces
+
+# List deployments in production namespace
+kubectl get deployments -n production
+
+# List pods
+kubectl get pods -n production
+
+
+#######################################################
+# 3. CHECK CURRENT PRODUCTION
+#######################################################
+
+# Show deployment details (current production)
+kubectl describe deployment production-current -n production
+
+# Show image version (quick check)
+kubectl get deployment production-current -n production `
+  -o jsonpath="{.spec.template.spec.containers[0].image}"
+
+
+#######################################################
+# 4. CHECK BASELINE (KEY SPINNAKER IDEA)
+#######################################################
+
+# This is a fresh copy of production version
+kubectl describe deployment production-baseline -n production
+
+# Verify image
+kubectl get deployment production-baseline -n production `
+  -o jsonpath="{.spec.template.spec.containers[0].image}"
+
+
+#######################################################
+# 5. CHECK CANARY
+#######################################################
+
+# New version deployment
+kubectl describe deployment canary -n production
+
+# Verify image
+kubectl get deployment canary -n production `
+  -o jsonpath="{.spec.template.spec.containers[0].image}"
+
+
+#######################################################
+# 6. LABEL CHECK (sanity check)
+#######################################################
+
+kubectl get pods -n production --show-labels
+
+
+#######################################################
+# 7. SIMULATION LOGIC (WHAT SPINNAKER WOULD DO)
+#######################################################
+
+Write-Host "------------------------------------------------"
+Write-Host "WRONG COMPARISON (DO NOT USE)"
+Write-Host "production-current vs canary"
+Write-Host "Reason: production has warm cache, canary is cold"
+Write-Host "------------------------------------------------"
+
+Write-Host "CORRECT COMPARISON (SPINNAKER BEHAVIOR)"
+Write-Host "production-baseline vs canary"
+Write-Host "Reason: both are fresh deployments with cold cache"
+Write-Host "------------------------------------------------"
+
+
+#######################################################
+# 8. FINAL EXAM ANSWER
+#######################################################
+
+Write-Host "ANSWER: A"
+Write-Host "Compare the canary with a new deployment of the current production version"
