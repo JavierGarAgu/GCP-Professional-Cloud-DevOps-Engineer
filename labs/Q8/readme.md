@@ -38,6 +38,14 @@ $good=0;$total=100;1..100|%{$l=[int]((curl.exe -s http://104.155.109.144) -repla
 ```
 ![](../../doc/images/25.PNG)
 
+Google recommends a request-based SLI for latency objectives. Instead of using percentiles, you classify each homepage request as either good or bad. A request is considered good if it completes in less than 100 ms. The SLI is then calculated by dividing the number of good requests by the total number of homepage requests. This directly measures the percentage of users experiencing acceptable performance and aligns with Google's SRE best practices.
 
+Formula:
+
+SLI = Requests with latency < 100 ms
+      --------------------------------
+      Total homepage requests
+
+This is exactly what the lab simulates.
 
 
