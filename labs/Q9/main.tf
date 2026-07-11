@@ -222,7 +222,7 @@ resource "kubernetes_service" "homepage" {
 
     selector = {
 
-      version = "green"
+      version = "blue"
 
       # cambiar a "green" para desplegar
       # volver a "blue" si hay problemas
@@ -244,6 +244,110 @@ resource "kubernetes_service" "homepage" {
 }
 
 ####################################################
+# CLOUD BUILD API
+####################################################
+
+resource "google_project_service" "cloudbuild" {
+
+  service = "cloudbuild.googleapis.com"
+
+  disable_on_destroy = false
+
+}
+
+####################################################
+# CLOUD BUILD SERVICE ACCOUNT
+####################################################
+
+resource "google_service_account" "cloudbuild_sa" {
+
+  account_id   = "cloudbuild-bluegreen"
+
+  display_name = "Cloud Build Service Account"
+
+}
+
+####################################################
+# CLOUD BUILD IAM
+####################################################
+
+resource "google_project_iam_member" "cloudbuild_logs" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/logging.logWriter"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+resource "google_project_iam_member" "cloudbuild_storage" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/storage.admin"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+####################################################
+# CLOUD BUILD TRIGGER
+####################################################
+
+resource "google_cloudbuild_trigger" "ci_pipeline" {
+
+  depends_on = [
+    google_project_service.cloudbuild
+  ]
+
+  name = "bluegreen-ci"
+
+  description = "Run unit tests before deployment"
+
+  location = "global"
+
+  service_account = google_service_account.cloudbuild_sa.id
+
+  filename = "cloudbuild.yaml"
+
+  github {
+
+    owner = "JavierGarAgu"
+
+    name  = "Q9-cloudbuild-webhook-lab"
+
+    push {
+
+      branch = "^main$"
+
+    }
+
+  }
+
+}
+
+resource "google_project_iam_member" "cloudbuild_container_admin" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/container.admin"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+resource "google_project_iam_member" "cloudbuild_cluster_viewer" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/container.clusterViewer"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+####################################################
 # OUTPUT
 ####################################################
 
@@ -252,3 +356,5 @@ output "ip" {
   value = kubernetes_service.homepage.status[0].load_balancer[0].ingress[0].ip
 
 }
+
+#terraform destroy -auto-approve && terraform apply -auto-approve
