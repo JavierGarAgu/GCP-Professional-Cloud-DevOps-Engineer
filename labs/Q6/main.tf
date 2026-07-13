@@ -1,17 +1,20 @@
 terraform {
 
-  required_version = ">= 1.5"
-
   required_providers {
 
     google = {
-        source  = "hashicorp/google"
-        version = ">= 5.20"
+      source  = "hashicorp/google"
+      version = ">= 5.20"
     }
 
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.0"
+    }
+
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
 
   }
@@ -43,7 +46,7 @@ resource "google_project_service" "container" {
 
   service = "container.googleapis.com"
 
-  disable_on_destroy = false
+  disable_on_destroy = true
 
 }
 
@@ -51,7 +54,61 @@ resource "google_project_service" "artifactregistry" {
 
   service = "artifactregistry.googleapis.com"
 
-  disable_on_destroy = false
+  disable_on_destroy = true
+
+}
+
+#######################################################
+# CLOUD BUILD -> BINARY AUTHORIZATION
+#######################################################
+
+resource "google_project_iam_member" "cloudbuild_binauthz_attestor_viewer" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/binaryauthorization.attestorsViewer"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+#######################################################
+# CLOUD BUILD -> CONTAINER ANALYSIS
+#######################################################
+
+resource "google_project_iam_member" "cloudbuild_containeranalysis" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/containeranalysis.notes.attacher"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+#######################################################
+# CLOUD BUILD -> KMS VIEWER
+#######################################################
+
+resource "google_project_iam_member" "cloudbuild_kms_viewer" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/cloudkms.viewer"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+data "google_project" "current" {}
+
+resource "google_binary_authorization_attestor_iam_member" "binauthz_verifier" {
+
+  attestor = google_binary_authorization_attestor.trusted.name
+
+  role = "roles/binaryauthorization.attestorsVerifier"
+
+  member = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-binaryauthorization.iam.gserviceaccount.com"
 
 }
 
@@ -59,7 +116,7 @@ resource "google_project_service" "cloudbuild" {
 
   service = "cloudbuild.googleapis.com"
 
-  disable_on_destroy = false
+  disable_on_destroy = true
 
 }
 
@@ -67,7 +124,7 @@ resource "google_project_service" "iam" {
 
   service = "iam.googleapis.com"
 
-  disable_on_destroy = false
+  disable_on_destroy = true
 
 }
 
@@ -75,7 +132,7 @@ resource "google_project_service" "compute" {
 
   service = "compute.googleapis.com"
 
-  disable_on_destroy = false
+  disable_on_destroy = true
 
 }
 
@@ -109,7 +166,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
     google_project_service.artifactregistry
   ]
 
-  repository_id = "cloudbuild-images"
+  repository_id = "trusted-images"
 
   location = "europe-west1"
 
@@ -128,18 +185,53 @@ resource "google_artifact_registry_repository" "docker_repo" {
 resource "google_container_cluster" "cluster" {
 
   depends_on = [
-    google_project_service.container
+    google_project_service.container,
+    google_project_service.binaryauthorization
   ]
 
-  name = "cloudbuild-webhook-lab"
-
+  name     = "binaryauth-cluster-v2"
   location = "europe-west1-b"
 
-  deletion_protection = false
-
+  deletion_protection     = false
   remove_default_node_pool = true
+  initial_node_count      = 1
 
-  initial_node_count = 1
+  binary_authorization {
+    evaluation_mode = "PROJECT_SINGLETON_POLICY_ENFORCE"
+  }
+
+}
+
+#######################################################
+#
+# KMS
+#
+#######################################################
+
+resource "google_kms_key_ring" "binauthz" {
+
+  depends_on = [
+    google_project_service.cloudkms
+  ]
+
+  name     = "binaryauth-keyring-v2"
+  location = "global"
+
+}
+
+resource "google_kms_crypto_key" "signing_key" {
+
+  name     = "binaryauth-key-v2"
+  key_ring = google_kms_key_ring.binauthz.id
+
+  purpose = "ASYMMETRIC_SIGN"
+
+  version_template {
+
+    algorithm        = "EC_SIGN_P256_SHA256"
+    protection_level = "SOFTWARE"
+
+  }
 
 }
 
@@ -307,7 +399,7 @@ resource "google_cloudbuild_trigger" "build_pipeline" {
 
     _REPOSITORY  = google_artifact_registry_repository.docker_repo.repository_id
 
-    _IMAGE       = "webhook"
+    _IMAGE = "webapp"
 
     _CLUSTER     = google_container_cluster.cluster.name
 
@@ -330,13 +422,98 @@ resource "google_cloudbuild_trigger" "build_pipeline" {
 
     owner = "JavierGarAgu"
 
-    name = "cloudbuild-webhook-lab"
+    name = "Q16-cloudbuild-webhook-lab"
 
     push {
 
       branch = "^main$"
 
     }
+
+  }
+
+}
+
+
+resource "google_container_analysis_note" "trusted_note" {
+  name = "trusted-cloudbuild-note-v2"
+
+  attestation_authority {
+    hint {
+      human_readable_name = "Cloud Build Attestor"
+    }
+  }
+}
+resource "google_binary_authorization_attestor" "trusted" {
+
+  depends_on = [
+    null_resource.export_public_key
+  ]
+
+  name = "trusted-cloudbuild-v2"
+
+  attestation_authority_note {
+
+    note_reference = google_container_analysis_note.trusted_note.name
+
+    public_keys {
+
+      id = "//cloudkms.googleapis.com/v1/projects/devops-cert-labs/locations/global/keyRings/binaryauth-keyring-v2/cryptoKeys/binaryauth-key-v2/cryptoKeyVersions/1"
+
+      pkix_public_key {
+
+        public_key_pem = file("${path.module}/public_key.pem")
+        signature_algorithm = "ECDSA_P256_SHA256"
+
+      }
+
+    }
+
+  }
+
+}
+
+resource "google_binary_authorization_attestor_iam_member" "verifier" {
+
+  attestor = google_binary_authorization_attestor.trusted.name
+
+  role = "roles/binaryauthorization.attestorsVerifier"
+
+  member = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-binaryauthorization.iam.gserviceaccount.com"
+
+}
+
+resource "google_project_iam_member" "cloudbuild_binauthz_viewer" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/binaryauthorization.attestorsViewer"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+resource "google_kms_crypto_key_iam_member" "cloudbuild_signer" {
+
+  crypto_key_id = google_kms_crypto_key.signing_key.id
+
+  role = "roles/cloudkms.signerVerifier"
+
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+resource "null_resource" "export_public_key" {
+
+  depends_on = [
+    google_kms_crypto_key.signing_key
+  ]
+
+  provisioner "local-exec" {
+
+    interpreter = ["PowerShell", "-Command"]
+
+    command = "gcloud kms keys versions get-public-key 1 --project=devops-cert-labs --location=global --keyring=binaryauth-keyring-v2 --key=binaryauth-key-v2 --output-file=\"${path.module}\\public_key.pem\""
 
   }
 
@@ -359,6 +536,30 @@ resource "google_project_iam_member" "cloudbuild_cluster_viewer" {
   role = "roles/container.clusterViewer"
 
   member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+}
+
+resource "google_project_service" "binaryauthorization" {
+
+  service = "binaryauthorization.googleapis.com"
+
+  disable_on_destroy = true
+
+}
+
+resource "google_project_service" "containeranalysis" {
+
+  service = "containeranalysis.googleapis.com"
+
+  disable_on_destroy = true
+
+}
+
+resource "google_project_service" "cloudkms" {
+
+  service = "cloudkms.googleapis.com"
+
+  disable_on_destroy = true
 
 }
 
