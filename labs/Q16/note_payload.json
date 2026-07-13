@@ -1,0 +1,8 @@
+﻿{
+  "name":"projects/devops-cert-labs/notes/trusted-cloudbuild-note",
+  "attestation":{
+    "hint":{
+      "human_readable_name":"Trusted Cloud Build Images"
+    }
+  }
+}
