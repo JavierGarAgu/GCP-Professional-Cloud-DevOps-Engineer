@@ -31,7 +31,10 @@ resource "google_project_service" "services" {
 
   for_each = toset([
     "compute.googleapis.com",
-    "cloudprofiler.googleapis.com"
+    "appengine.googleapis.com",
+    "monitoring.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "artifactregistry.googleapis.com"
   ])
 
   project = "devops-cert-labs"
@@ -42,38 +45,75 @@ resource "google_project_service" "services" {
 }
 
 ####################################################
-# DEFAULT COMPUTE SERVICE ACCOUNT
+# APP ENGINE APPLICATION
+####################################################
+
+resource "google_app_engine_application" "app" {
+
+  project     = "devops-cert-labs"
+  location_id = "europe-west"
+
+  depends_on = [
+    google_project_service.services
+  ]
+
+}
+
+####################################################
+# DEFAULT SERVICE ACCOUNT
 ####################################################
 
 data "google_compute_default_service_account" "default" {}
 
 ####################################################
-# CLOUD PROFILER AGENT ROLE
+# IAM
 ####################################################
 
-resource "google_project_iam_member" "profiler_agent" {
+resource "google_project_iam_member" "editor" {
 
   project = "devops-cert-labs"
 
-  role = "roles/cloudprofiler.agent"
+  role = "roles/editor"
 
   member = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 
 }
 
+resource "google_project_iam_member" "appengine_admin" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/appengine.appAdmin"
+
+  member = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+
+}
+
+resource "google_project_iam_member" "storage_admin" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/storage.admin"
+
+  member = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+
+}
 ####################################################
 # COMPUTE ENGINE
 ####################################################
 
-resource "google_compute_instance" "vm" {
+resource "google_compute_instance" "appengine_lab" {
 
-  name         = "profiler-lab-vm"
+  name         = "appengine-monitoring-lab"
   machine_type = "e2-micro"
   zone         = "europe-west1-b"
 
   depends_on = [
     google_project_service.services,
-    google_project_iam_member.profiler_agent
+    google_app_engine_application.app,
+    google_project_iam_member.editor,
+    google_project_iam_member.appengine_admin,
+    google_project_iam_member.storage_admin
   ]
 
   boot_disk {
@@ -112,7 +152,9 @@ resource "google_compute_instance" "vm" {
   # TAGS
   ####################################################
 
-  tags = ["profiler-lab"]
+  tags = [
+    "appengine-lab"
+  ]
 
   ####################################################
   # STARTUP SCRIPT
@@ -122,90 +164,183 @@ resource "google_compute_instance" "vm" {
 #!/bin/bash
 set -euxo pipefail
 
-exec >/var/log/startup.log 2>&1
+exec > >(tee -a /var/log/initial-script.log) 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+
+echo "========================================"
+echo "App Engine Monitoring Lab Startup"
+echo "Started at: $(date)"
+echo "========================================"
+
+####################################################
+# INSTALL DEPENDENCIES
+####################################################
 
 apt-get update
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y \
+apt-get install -y \
 python3 \
 python3-pip \
-python3-venv
+curl
 
-mkdir -p /opt/profiler
+####################################################
+# VERIFY GCLOUD
+####################################################
 
-python3 -m venv /opt/profiler/venv
+if ! command -v gcloud >/dev/null 2>&1; then
+    echo "ERROR: gcloud CLI not found."
+    exit 1
+fi
 
-/opt/profiler/venv/bin/pip install --upgrade pip
+echo "gcloud found."
 
-/opt/profiler/venv/bin/pip install \
-Flask \
-google-cloud-profiler
+gcloud version
 
-cat >/opt/profiler/app.py <<'EOF'
-import googlecloudprofiler
+####################################################
+# CREATE PROJECT DIRECTORY
+####################################################
+
+mkdir -p /opt/appengine-lab
+
+cd /opt/appengine-lab
+
+####################################################
+# CREATE app.py
+####################################################
+
+cat > app.py <<'EOF'
 from flask import Flask
-
-googlecloudprofiler.start(
-    service="profiler-lab",
-    service_version="v1"
-)
 
 app = Flask(__name__)
 
 @app.route("/")
-def index():
+def home():
 
     total = 0
 
-    for i in range(10000000):
+    for i in range(5000000):
         total += i
 
-    return "Profiler Lab Running"
+    return """
+    <h1>App Engine Monitoring Lab</h1>
+    <p>The application is running correctly.</p>
+    <p>This endpoint generates CPU load to simulate requests.</p>
+    """
 
-app.run(host="0.0.0.0", port=8080)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
 EOF
 
-nohup /opt/profiler/venv/bin/python \
-/opt/profiler/app.py \
->/var/log/profiler.log 2>&1 &
+####################################################
+# CREATE requirements.txt
+####################################################
+
+cat > requirements.txt <<'EOF'
+Flask==3.0.3
+gunicorn==23.0.0
+EOF
+
+####################################################
+# CREATE app.yaml
+####################################################
+
+cat > app.yaml <<'EOF'
+runtime: python
+
+env: flex
+
+entrypoint: gunicorn -b :$PORT app:app
+
+runtime_config:
+  operating_system: "ubuntu24"
+
+automatic_scaling:
+  min_num_instances: 1
+  max_num_instances: 2
+
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 10
+EOF
+
+####################################################
+# CONFIGURE GCLOUD
+####################################################
+
+gcloud auth list
+
+gcloud config set project devops-cert-labs
+
+####################################################
+# WAIT FOR APP ENGINE
+####################################################
+
+echo "Waiting for App Engine..."
+
+sleep 30
+
+####################################################
+# DEPLOY APPLICATION
+####################################################
+
+gcloud app deploy app.yaml \
+  --quiet \
+  --verbosity=info
+
+echo "========================================"
+echo "Deployment finished successfully"
+echo "Finished at: $(date)"
+echo "========================================"
+
 SCRIPT
 
 }
 
-####################################################
-# FIREWALL
-####################################################
+resource "google_project_iam_member" "appspot_storage_admin" {
 
-resource "google_compute_firewall" "http" {
+  project = "devops-cert-labs"
 
-  name = "allow-http-profiler"
+  role = "roles/storage.admin"
 
-  network = "default"
-
-  allow {
-
-    protocol = "tcp"
-    ports    = ["8080"]
-
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-
-  target_tags = ["profiler-lab"]
+  member = "serviceAccount:devops-cert-labs@appspot.gserviceaccount.com"
 
 }
 
 ####################################################
-# IAM FOR YOUR USER
+# APP ENGINE SERVICE ACCOUNT PERMISSIONS
 ####################################################
 
-resource "google_project_iam_member" "viewer" {
+resource "google_project_iam_member" "appengine_artifact_reader" {
 
   project = "devops-cert-labs"
 
-  role = "roles/cloudprofiler.user"
+  role = "roles/artifactregistry.reader"
 
-  member = "user:javiergaragu03@gmail.com"
+  member = "serviceAccount:devops-cert-labs@appspot.gserviceaccount.com"
+
+}
+
+
+resource "google_project_iam_member" "appengine_artifact_writer" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/artifactregistry.writer"
+
+  member = "serviceAccount:devops-cert-labs@appspot.gserviceaccount.com"
+
+}
+
+
+resource "google_project_iam_member" "appengine_cloudbuild_builder" {
+
+  project = "devops-cert-labs"
+
+  role = "roles/cloudbuild.builds.builder"
+
+  member = "serviceAccount:devops-cert-labs@appspot.gserviceaccount.com"
 
 }
 
@@ -213,14 +348,32 @@ resource "google_project_iam_member" "viewer" {
 # OUTPUTS
 ####################################################
 
-output "vm_ip" {
+output "app_engine_url" {
 
-  value = google_compute_instance.vm.network_interface[0].access_config[0].nat_ip
+  description = "App Engine application URL"
+
+  value = "https://devops-cert-labs.ew.r.appspot.com"
 
 }
 
-output "profiler_url" {
+output "monitoring_console" {
 
-  value = "https://console.cloud.google.com/profiler?project=devops-cert-labs"
+  description = "Cloud Monitoring"
+
+  value = "https://console.cloud.google.com/monitoring?project=devops-cert-labs"
+
+}
+
+output "metrics_explorer" {
+
+  description = "Metric to verify"
+
+  value = "flex/connections/current"
+
+}
+
+output "exam_answer" {
+
+  value = "Correct metric: flex/connections/current"
 
 }

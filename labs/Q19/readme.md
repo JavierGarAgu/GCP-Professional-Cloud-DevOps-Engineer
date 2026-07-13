@@ -1,289 +1,387 @@
 COMMANDS
+
 ```
-####################################################
-# Get the external IP address
-####################################################
-
-$VM_IP = terraform output -raw vm_ip
-
-####################################################
-# Verify that the VM exists
-####################################################
-
-gcloud compute instances list
-
-####################################################
-# Display the VM details
-####################################################
-
-gcloud compute instances describe profiler-lab-vm --zone=europe-west1-b
-
-####################################################
-# Test the application
-####################################################
-
-curl.exe "http://$VM_IP`:8080"
-
-####################################################
-# Open the application
-####################################################
-
-Start-Process "http://$VM_IP`:8080"
-
-####################################################
-# Open Cloud Profiler
-####################################################
-
-Start-Process "https://console.cloud.google.com/profiler?project=devops-cert-labs"
-
-####################################################
-# Open Compute Engine
-####################################################
-
-Start-Process "https://console.cloud.google.com/compute/instances?project=devops-cert-labs"
-
-####################################################
-# Open Cloud Monitoring
-####################################################
-
-Start-Process "https://console.cloud.google.com/monitoring?project=devops-cert-labs"
-
-####################################################
-# Generate CPU load for a few seconds
-####################################################
-
-1..30 | ForEach-Object {
-    curl.exe -s "http://$VM_IP`:8080" > $null
-}
-
-Write-Host ""
-Write-Host "========================================================="
-Write-Host "Lab verification completed."
-Write-Host ""
-Write-Host "1. The application is running on Compute Engine."
-Write-Host "2. Cloud Profiler is enabled."
-Write-Host "3. Requests were generated to produce profiling data."
-Write-Host "4. Open Cloud Profiler and inspect CPU usage."
-Write-Host ""
-Write-Host "This demonstrates why the correct answer is:"
-Write-Host ""
-Write-Host "B. Use Stackdriver Profiler to visualize the resource"
-Write-Host "utilization throughout the application."
-Write-Host "========================================================="
+terraform import google_app_engine_application.app devops-cert-labs
 ```
 
-![](../../doc/images/29.PNG)
+CAUTION, u MUST WAIT 20 MINUTES UNTIL THE APP ENGINE FLEX IS RUNNING
 
-![](../../doc/images/30.PNG)
+![](../../doc/images/31.PNG)
 
 # Google Cloud Professional Cloud DevOps Engineer Lab
 
-# Question - Finding CPU Bottlenecks with Cloud Profiler
+# Question - App Engine Monitoring Connections Metric
 
 ---
 
 ## Introduction
 
-This lab demonstrates how **Cloud Profiler** can be used to identify CPU bottlenecks inside an application running on **Google Compute Engine**.
+This repository contains a small hands-on lab created while preparing for the **Google Cloud Professional Cloud DevOps Engineer** certification.
 
-The objective is to understand why Cloud Profiler is the correct service when developers need to analyze **where CPU time is spent** inside the application instead of only monitoring infrastructure metrics.
+The goal of this lab is to understand how to monitor an application running on **Google App Engine Flexible Environment** and identify the correct Cloud Monitoring metric to measure the number of active connections.
 
----
+The original exam question asks:
 
-# Exam Question
+> You support an application running on App Engine. The application is used globally and accessed from various device types. You want to know the number of connections. You are using Stackdriver Monitoring for App Engine. What metric should you use?
 
-A development team reports that one of their production services has become slower over time. The VM metrics show that CPU utilization is high, but the operations team cannot determine which part of the application is consuming the CPU.
+Correct answer:
 
-Which Google Cloud service should be used?
-
-**Correct Answer:**
-
-> **B. Use Cloud Profiler to visualize the resource utilization throughout the application.**
+**A - `flex/connections/current`**
 
 ---
 
-# Why Answer B is Correct
+# Architecture
 
-Cloud Monitoring can show that CPU usage is high, but it **cannot identify which functions or methods are responsible** for the CPU consumption.
+The lab creates the following components:
 
-Cloud Profiler continuously samples the running application and collects information about where the CPU spends its time. The collected data is transformed into flame graphs and call trees, making it easy to identify performance bottlenecks.
+```
+                    Users
+                      |
+                      |
+                      v
+             App Engine Flexible
+                      |
+                      |
+              Cloud Monitoring
+                      |
+                      |
+             flex/connections/current
+```
 
-Because profiling happens while the application is running, developers do not need to stop the service or manually instrument every function.
+Infrastructure created with Terraform:
 
-This makes Cloud Profiler the correct tool for analyzing CPU-intensive code in production environments.
-
----
-
-# Why the Other Answers Are Incorrect
-
-### Option A
-
-Cloud Monitoring only reports infrastructure metrics such as CPU usage, memory usage, network traffic, and disk activity.
-
-It tells you **that** CPU usage is high, but not **why**.
-
----
-
-### Option C
-
-Cloud Trace measures request latency and distributed request paths between services.
-
-It is useful for understanding slow requests, but it does not show which functions consume the most CPU.
-
----
-
-### Option D
-
-Cloud Logging stores application logs and system logs.
-
-Although logs are useful for debugging, they cannot identify CPU hotspots inside the application.
-
----
-
-# Lab Architecture
-
-The lab deploys the following resources:
-
-- Google Compute Engine VM
+- Google App Engine application
+- App Engine Flexible service
+- Compute Engine instance used as deployment machine
 - Python Flask application
-- Cloud Profiler Agent
-- Firewall rule allowing HTTP traffic on port 8080
-- IAM permissions for Cloud Profiler
+- Cloud Monitoring metrics
 
-The Flask application performs an intentionally expensive CPU loop every time a request is received so Cloud Profiler has enough data to analyze.
 
 ---
 
-# Deployment
+# Why is the correct answer A?
 
-Terraform creates the complete environment.
+The metric:
+
+```
+flex/connections/current
+```
+
+represents the current number of active connections handled by an **App Engine Flexible Environment** application.
+
+This metric is the correct choice because:
+
+- The application runs on App Engine Flex.
+- The question asks about current connections.
+- The metric belongs specifically to App Engine Flexible instances.
+
+
+---
+
+# Why the other options are incorrect?
+
+## B - tcp_ssl_proxy/new_connections
+
+```
+tcp_ssl_proxy/new_connections
+```
+
+This metric belongs to **TCP SSL Proxy Load Balancing**.
+
+It measures new connections created by the proxy, not App Engine application connections.
+
+It is unrelated to App Engine Flex.
+
+
+---
+
+## C - tcp_ssl_proxy/open_connections
+
+```
+tcp_ssl_proxy/open_connections
+```
+
+This is also a TCP SSL Proxy metric.
+
+It measures open connections at the load balancer proxy layer.
+
+It does not represent connections handled by App Engine.
+
+
+---
+
+## D - flex/instance/connections/current
+
+```
+flex/instance/connections/current
+```
+
+This metric does not exist as an App Engine Flexible Monitoring metric.
+
+The correct metric is:
+
+```
+flex/connections/current
+```
+
+without the `instance` section.
+
+---
+
+# Application deployed
+
+The lab deploys a simple Flask application:
+
+```python
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+
+    total = 0
+
+    for i in range(5000000):
+        total += i
+
+    return """
+    <h1>App Engine Monitoring Lab</h1>
+    <p>The application is running correctly.</p>
+    <p>This endpoint generates CPU load to simulate requests.</p>
+    """
+```
+
+The CPU loop generates some workload to create observable activity in Cloud Monitoring.
+
+---
+
+# Verification Commands
+
+## Check App Engine services
 
 ```bash
-terraform init
-terraform apply
+gcloud app services list
+```
+
+Expected output:
+
+```
+SERVICE
+default
 ```
 
 ---
 
-# Verify the VM
-
-List the Compute Engine instances.
+## List deployed versions
 
 ```bash
-gcloud compute instances list
+gcloud app versions list
 ```
 
-Display the VM details.
+Example:
 
-```bash
-gcloud compute instances describe profiler-lab-vm --zone=europe-west1-b
+```
+SERVICE   VERSION          TRAFFIC
+default   20260713t194821  1
 ```
 
 ---
 
-# Verify the Application
-
-Retrieve the VM external IP.
+## Check App Engine instances
 
 ```bash
-terraform output vm_ip
+gcloud app instances list
 ```
 
-Open the application.
-
-```text
-http://VM_EXTERNAL_IP:8080
-```
-
-The browser should display:
+Example:
 
 ```
-Profiler Lab Running
+SERVICE VERSION INSTANCE
+default 20260713t194821 instance-1
 ```
 
 ---
 
-# Generate CPU Activity
-
-Send multiple requests to the application.
+## Check deployment operations
 
 ```bash
-for i in {1..100}; do
-curl http://VM_EXTERNAL_IP:8080 > /dev/null
-done
+gcloud app operations list
 ```
 
-Every request executes a CPU-intensive loop, allowing Cloud Profiler to collect samples.
+This helps identify successful and failed deployments.
+
+Example:
+
+```
+ID                                      STATUS
+operation-xxxx                          COMPLETED
+```
 
 ---
 
-# Open Cloud Profiler
+## Access the application
 
-Open the Google Cloud Console.
+Using curl:
+
+```bash
+curl https://devops-cert-labs.ew.r.appspot.com
+```
+
+Expected response:
+
+```html
+<h1>App Engine Monitoring Lab</h1>
+<p>The application is running correctly.</p>
+```
+
+---
+
+# Cloud Monitoring Verification
+
+Open Cloud Monitoring:
+
+```
+https://console.cloud.google.com/monitoring?project=devops-cert-labs
+```
 
 Navigate to:
 
 ```
-Operations
-    → Profiler
+Monitoring
+    |
+    └── Metrics Explorer
 ```
 
-or open it directly:
+Select:
 
 ```
-https://console.cloud.google.com/profiler
+Resource type:
+App Engine Version
+```
+
+Search for:
+
+```
+flex/connections/current
+```
+
+The chart will display the current number of active connections.
+
+---
+
+# Generating Traffic
+
+To create more activity:
+
+```bash
+for i in {1..100}
+do
+curl https://devops-cert-labs.ew.r.appspot.com
+done
+```
+
+Then check the metric again:
+
+```
+flex/connections/current
 ```
 
 ---
 
-# Wait for Profiling Data
+# Terraform Deployment Flow
 
-Cloud Profiler does not display results immediately.
+The deployment process is:
 
-Normally it takes several minutes before the first profile becomes available because the service must collect enough CPU samples.
+```
+terraform apply
 
-Once enough data has been collected, flame graphs and call trees become available.
+        |
+        v
+
+Create App Engine Application
+
+        |
+        v
+
+Create Compute Engine deployment host
+
+        |
+        v
+
+Install Google Cloud SDK
+
+        |
+        v
+
+Generate Flask application files
+
+        |
+        v
+
+gcloud app deploy
+
+        |
+        v
+
+Cloud Build
+
+        |
+        v
+
+App Engine Flexible Version
+```
 
 ---
 
-# Expected Result
+# Troubleshooting
 
-Cloud Profiler should display:
+## Check startup script logs
 
-- CPU profile
-- Flame graph
-- Call tree
-- Functions consuming the most CPU
-- Percentage of CPU used by each function
+Connect to the VM:
 
-The `index()` function should appear as the main CPU consumer because it executes a large loop.
+```bash
+gcloud compute ssh appengine-monitoring-lab
+```
 
----
+Then:
 
-# What We Learned
-
-In this lab we learned how to:
-
-- Deploy a Compute Engine VM with Terraform.
-- Install and configure Cloud Profiler.
-- Deploy a Python Flask application.
-- Generate CPU load.
-- Collect profiling samples.
-- Analyze CPU hotspots using Cloud Profiler.
-- Understand the difference between infrastructure monitoring and application profiling.
+```bash
+sudo tail -f /var/log/initial-script.log
+```
 
 ---
 
-# Key Takeaways
+## Check App Engine logs
 
-Cloud Monitoring answers:
+```bash
+gcloud app logs tail
+```
 
-> **"How much CPU is the VM using?"**
+---
 
-Cloud Profiler answers:
+## Check Cloud Build history
 
-> **"Which function inside my application is using the CPU?"**
+```bash
+gcloud builds list
+```
 
-That difference is exactly why **Answer B** is the correct choice for the exam.
+---
 
-Cloud Profiler provides continuous profiling with very low overhead and helps developers identify performance bottlenecks without modifying the application logic.
+# Exam Summary
+
+The application runs on **App Engine Flexible Environment** and the question asks for the number of active connections.
+
+The correct Cloud Monitoring metric is:
+
+```
+flex/connections/current
+```
+
+because it directly measures current connections for App Engine Flexible applications.
+
+Final answer:
+
+```
+A - flex/connections/current
+```
