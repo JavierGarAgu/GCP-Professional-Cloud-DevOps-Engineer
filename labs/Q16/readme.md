@@ -2320,3 +2320,4 @@ kubectl describe deployment -n production
 
 kubectl logs -n production -l app=webapp
 ```
+
