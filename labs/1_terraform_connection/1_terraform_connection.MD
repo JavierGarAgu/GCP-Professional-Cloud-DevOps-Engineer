@@ -29,7 +29,7 @@ provider "google" {
 }
 ```
 
-The project field should be your personal project id. The project indicates the default GCP project all of your resources will be created in. Most Terraform resources will have a project field.
+The project field should be your personal project id. The project indicates the default GCP project all terraform showof your resources will be created in. Most Terraform resources will have a project field.
 The region and zone are locations for your resources to be created in.
 The region will be used to choose the default location for regional resources. Regional resources are spread across several zones.
 The zone will be used to choose the default location for zonal resources. Zonal resources exist in a single zone. All zones are a part of a region.
