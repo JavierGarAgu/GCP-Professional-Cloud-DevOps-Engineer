@@ -1,5 +1,7 @@
 # Binary Authorization with Google Kubernetes Engine
 
+![](../../doc/images/38.PNG)
+
 ## Overview
 
 This lab demonstrates how to protect a Google Kubernetes Engine (GKE) cluster by allowing deployments only from a trusted container image repository.
