@@ -168,6 +168,14 @@ resource "google_cloudbuild_trigger" "container_pipeline" {
 
 }
 
+resource "google_project_service" "containeranalysis" {
+
+  service = "containeranalysis.googleapis.com"
+
+  disable_on_destroy = false
+
+}
+
 #######################################################
 # OUTPUTS
 #######################################################
