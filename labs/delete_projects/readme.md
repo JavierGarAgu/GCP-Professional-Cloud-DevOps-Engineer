@@ -19,3 +19,6 @@ logging.googleapis.com `
 cloudbuild.googleapis.com `
 iam.googleapis.com `
 serviceusage.googleapis.com
+cloudbuild.googleapis.com `
+artifactregistry.googleapis.com `
+secretmanager.googleapis.com
