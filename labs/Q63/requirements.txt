@@ -1,0 +1,4 @@
+Flask
+gunicorn
+google-cloud-error-reporting
+google-cloud-logging
