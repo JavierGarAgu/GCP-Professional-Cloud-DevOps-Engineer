@@ -21,7 +21,8 @@ iam.googleapis.com `
 serviceusage.googleapis.com
 cloudbuild.googleapis.com `
 artifactregistry.googleapis.com `
-secretmanager.googleapis.com
+secretmanager.googleapis.com `
+appengine.googleapis.com
 
 
 
