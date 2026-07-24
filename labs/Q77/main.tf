@@ -144,29 +144,22 @@ resource "google_compute_subnetwork" "logging_subnet" {
 
 resource "google_compute_firewall" "allow_ssh" {
 
-  name = "allow-ssh"
-
+  name    = "allow-ssh"
   network = google_compute_network.logging_network.name
 
   allow {
 
     protocol = "tcp"
-
-    ports = [
-
-      "22"
-
-    ]
+    ports = ["22"]
 
   }
 
-  source_ranges = [
+  source_ranges = ["0.0.0.0/0"]
 
-    "0.0.0.0/0"
-
-  ]
+  target_tags = ["ssh"]
 
 }
+
 
 #######################################################
 #
