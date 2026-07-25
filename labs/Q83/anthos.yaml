@@ -1,0 +1,62 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+
+metadata:
+  name: demo
+  namespace: production
+
+spec:
+  host: demo-service
+
+  subsets:
+
+    - name: v1
+      labels:
+        version: v1
+
+    - name: v2
+      labels:
+        version: v2
+
+---
+
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+
+metadata:
+  name: demo
+  namespace: production
+
+spec:
+
+  hosts:
+    - demo-service
+
+  http:
+
+    # Android -> v2
+
+    - match:
+        - headers:
+            user-agent:
+              regex: ".*Android.*"
+
+      route:
+
+        - destination:
+            host: demo-service
+            subset: v2
+
+    # Resto usuarios -> Canary 90/10
+
+    - route:
+
+        - destination:
+            host: demo-service
+            subset: v1
+          weight: 90
+
+        - destination:
+            host: demo-service
+            subset: v2
+          weight: 10
