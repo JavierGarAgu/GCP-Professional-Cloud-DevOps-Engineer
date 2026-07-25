@@ -40,7 +40,6 @@ terraform {
 provider "google" {
 
   project = "devops-cert-labs-v3"
-
   region = "europe-west1"
 
 }
@@ -51,7 +50,9 @@ provider "google" {
 # ENABLE APIS
 ####################################################
 
+
 #gcloud services enable appengine.googleapis.com logging.googleapis.com --project=devops-cert-labs-v3
+
 
 ####################################################
 # APP ENGINE
