@@ -22,7 +22,7 @@ terraform {
 
 provider "google" {
 
-  project = "devops-cert-labs-v3"
+  project = "devops-cert-labs-v4"
   region  = "europe-west1"
 
 }
@@ -37,7 +37,7 @@ provider "google" {
 
 data "google_project" "project" {
 
-  project_id = "devops-cert-labs-v3"
+  project_id = "devops-cert-labs-v4"
 
 }
 
@@ -196,7 +196,7 @@ resource "google_container_cluster" "cluster" {
 
   workload_identity_config {
 
-    workload_pool = "devops-cert-labs-v3.svc.id.goog"
+    workload_pool = "devops-cert-labs-v4.svc.id.goog"
 
   }
 

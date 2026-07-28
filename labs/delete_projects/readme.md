@@ -4,7 +4,7 @@ gcloud projects describe devops-cert-labs --format="value(lifecycleState)"
 
 gcloud projects create devops-cert-labs-v2 --name="DevOps Cert Labs V2"
 
-gcloud config set project devops-cert-labs-v2
+gcloud config set project devops-cert-labs-v4
 
 #get billing_id
 gcloud billing accounts list
