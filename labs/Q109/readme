@@ -1,0 +1,202 @@
+the lab parts of Q108 lab
+COMMANDS
+```
+gcloud run deploy cost-optimization-demo --image us-docker.pkg.dev/cloudrun/container/hello --no-traffic --tag dev --region europe-west1
+#list revisions
+gcloud run revisions list --service cost-optimization-demo --region europe-west1
+gcloud run services describe cost-optimization-demo --region europe-west1
+<!-- europe-west1
++ Service cost-optimization-demo in region europe-west1
+ 
+URL:     https://cost-optimization-demo-604839024868.europe-west1.run.app
+Ingress: all
+Traffic:
+  100% cost-optimization-demo-00001-gwb
+  0%   cost-optimization-demo-00002-gig
+         dev: https://dev---cost-optimization-demo-5jykidtqgq-ew.a.run.app
+ 
+Scaling: Auto (Min: 0, Max: 20)
+ 
+Last updated on 2026-08-01T20:40:53.835286Z by javiermovilx30@gmail.com:
+  Revision cost-optimization-demo-00002-gig
+  Container None
+    Image:           us-docker.pkg.dev/cloudrun/container/hello
+    Port:            8080
+    Memory:          512Mi
+    CPU:             1000m
+    Startup Probe:
+      TCP every 240s
+      Port:          8080
+      Initial delay: 0s
+      Timeout:       240s
+      Failure threshold: 1
+      Type:          Default
+  Service account:   604839024868-compute@developer.gserviceaccount.com
+  Concurrency:       80
+  Scaling:
+    Min instances:   0
+    Max instances:   20
+  Timeout:           300s
+  Session Affinity:  false -->
+
+  Invoke-WebRequest "https://dev---cost-optimization-demo-5jykidtqgq-ew.a.run.app"
+  Invoke-WebRequest "https://cost-optimization-demo-604839024868.europe-west1.run.app"
+
+  #dev and production will respond the same html in this lab
+```
+
+# Q109 - Testing Cloud Run Revisions Before Production
+
+## Scenario
+
+A Cloud Run service is already deployed and available to customers.
+
+The company wants developers to test the latest version of the application before it is exposed to production traffic.
+
+The correct answer is:
+
+**A. Run the `gcloud run deploy booking-engine --no-traffic --tag dev` command. Use the tagged URL for testing.**
+
+---
+
+# Why This Works
+
+Cloud Run creates a new **revision** every time a new version of the application is deployed.
+
+Normally, the latest revision receives production traffic immediately.
+
+However, using the following options changes this behavior:
+
+* `--no-traffic`
+* `--tag dev`
+
+The new revision is deployed successfully but receives **0% of the production traffic**.
+
+At the same time, Cloud Run creates a dedicated URL for the tagged revision, allowing developers to test it independently.
+
+For example:
+
+```text
+Production URL
+
+https://booking-engine-abcdef.a.run.app
+```
+
+```text
+Development URL
+
+https://dev--booking-engine-abcdef.a.run.app
+```
+
+Customers continue using the production version while developers test the latest revision through the tagged URL.
+
+---
+
+# Why the Other Options Are Incorrect
+
+## B. Route 1% of Traffic to the Latest Revision
+
+Sending even 1% of production traffic means real users are testing the new version.
+
+The requirement states that developers must test the revision **before it is exposed to customers**.
+
+Therefore, this option does not satisfy the requirement.
+
+## C. Identity Token
+
+An identity token controls authentication.
+
+It does not create a separate revision or prevent production traffic from reaching the latest deployment.
+
+## D. Grant the Cloud Run Invoker Role
+
+Granting the `roles/run.invoker` role allows developers to invoke the service.
+
+However, it does not create a private testing revision or a separate testing URL.
+
+---
+
+# Relationship with Q108
+
+This question is a continuation of the previous lab.
+
+In Q108, a Cloud Run service was deployed using Terraform to monitor CPU and memory utilization with Cloud Monitoring.
+
+The application architecture remained the same.
+
+```text
+                Internet
+                    │
+                    ▼
+             Cloud Run Service
+                    │
+                    ▼
+          Serverless Container
+                    │
+                    ▼
+          Cloud Monitoring Metrics
+```
+
+In Q109, the infrastructure does not change.
+
+Instead, a **new revision** is deployed without affecting production traffic.
+
+```text
+                Internet
+                    │
+                    ▼
+             Cloud Run Service
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+        ▼                       ▼
+ Production Revision       Dev Revision
+      100% Traffic            0% Traffic
+           │                     │
+           │                     │
+           │          https://dev--service.run.app
+           │                     │
+      Customers             Developers
+```
+
+This approach allows safe testing without interrupting production.
+
+---
+
+# Lab Implementation
+
+The lab starts from the Cloud Run service created in Q108.
+
+A new revision is deployed using:
+
+```bash
+gcloud run deploy cost-optimization-demo \
+    --image us-docker.pkg.dev/cloudrun/container/hello \
+    --no-traffic \
+    --tag dev \
+    --region europe-west1
+```
+
+After deployment, the service configuration can be verified with:
+
+```bash
+gcloud run services describe cost-optimization-demo \
+    --region europe-west1
+```
+
+Example output:
+
+```text
+Traffic:
+  100% cost-optimization-demo-00001
+  0%   cost-optimization-demo-00002
+        dev: https://dev---cost-optimization-demo-xxxxx.run.app
+```
+
+The output confirms that:
+
+* The production revision continues receiving 100% of the traffic.
+* The new revision receives 0% of the traffic.
+* Developers can access the new revision through the dedicated **dev** URL.
+
+This deployment strategy enables safe testing before releasing a new version to production users.
