@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: DaemonSet
+
+metadata:
+  name: logging-agent
+  namespace: kube-system
+
+spec:
+
+  selector:
+
+    matchLabels:
+
+      app: logging-agent
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: logging-agent
+
+    spec:
+
+      containers:
+
+      - name: logger
+
+        image: busybox
+
+        command:
+
+          - sh
+          - -c
+          - while true; do echo "Logging..."; sleep 30; done
