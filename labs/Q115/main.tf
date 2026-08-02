@@ -68,7 +68,7 @@ resource "google_storage_bucket" "log_archive" {
 
   uniform_bucket_level_access = true
 
-  force_destroy = false
+  force_destroy = true
 
   retention_policy {
 

@@ -16,6 +16,8 @@ gcloud logging write terraform-demo "Compliance log test 3"
 
 gcloud logging read 'logName="projects/devops-cert-labs-v4/logs/terraform-demo"' --limit=5
 
+# wait 1 hour and list the bucket
+
 gcloud storage ls gs://$BUCKET
 
 gcloud storage ls --recursive gs://$BUCKET
