@@ -1,0 +1,38 @@
+{
+  "displayName": "Example Dashboard",
+  "mosaicLayout": {
+    "columns": 12,
+    "tiles": [
+      {
+        "xPos": 0,
+        "yPos": 0,
+        "width": 12,
+        "height": 4,
+        "widget": {
+          "title": "VM CPU Utilization",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN"
+                    }
+                  }
+                },
+                "plotType": "LINE"
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "CPU Utilization",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
