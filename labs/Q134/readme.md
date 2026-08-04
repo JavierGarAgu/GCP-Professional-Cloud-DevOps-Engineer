@@ -1,18 +1,5 @@
 # Q134 - Binary Authorization for Trusted Container Images
 
-```text
-=========================================================
-   ____  _                       _          _   _     
-  |  _ \(_)                     | |        | | | |    
-  | |_) |_ _ __   __ _ _ __ _   | |    __ _| |_| |__  
-  |  _ <| | '_ \ / _` | '__| |  | |   / _` | __| '_ \ 
-  | |_) | | | | | (_| | |  | |  | |__| (_| | |_| | | |
-  |____/|_|_| |_|\__,_|_|  |_|  |_____\__,_|\__|_| |_|
-
-     Binary Authorization Deployment Protection
-=========================================================
-```
-
 ## Objective
 
 The goal of this question is to identify the Google Cloud service that enforces deploy-time security policies while keeping operational management as simple as possible.
